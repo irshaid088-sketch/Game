@@ -1,0 +1,680 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>School Clubs Quest</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700;800&family=Cairo:wght@500;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --cork:#d8b98a;
+    --cork-dark:#b8925c;
+    --paper:#fffaf0;
+    --ink:#3a2c1c;
+    --gold:#e0a83c;
+    --green:#3fa96b;
+    --red:#d9534f;
+
+    --c-choir:#8b5fbf;
+    --c-choir-dark:#6b3f9e;
+    --c-computer:#2f8fd1;
+    --c-computer-dark:#1f6fa8;
+    --c-swim:#1fa9b8;
+    --c-swim-dark:#137d89;
+    --c-chess:#c0392b;
+    --c-chess-dark:#962c20;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    font-family:'Cairo', sans-serif;
+    color:var(--ink);
+    min-height:100vh;
+    background:
+      radial-gradient(circle at 15% 10%, rgba(255,255,255,0.15) 0, transparent 40%),
+      radial-gradient(circle at 85% 90%, rgba(0,0,0,0.08) 0, transparent 40%),
+      repeating-linear-gradient(135deg, rgba(0,0,0,0.02) 0px, rgba(0,0,0,0.02) 2px, transparent 2px, transparent 14px),
+      linear-gradient(180deg, var(--cork) 0%, var(--cork-dark) 100%);
+    padding-bottom:40px;
+  }
+
+  header{
+    text-align:center;
+    padding:26px 16px 10px;
+  }
+  .badge-top{
+    display:inline-block;
+    background:var(--paper);
+    border-radius:14px;
+    padding:6px 18px;
+    font-family:'Baloo 2',sans-serif;
+    font-weight:700;
+    font-size:12px;
+    color:var(--cork-dark);
+    box-shadow:0 3px 0 rgba(0,0,0,0.12);
+    transform:rotate(-2deg);
+    margin-bottom:10px;
+    direction:ltr;
+  }
+  h1{
+    font-family:'Baloo 2', sans-serif;
+    font-size:clamp(24px,6vw,32px);
+    margin:0 0 6px;
+    color:#fff;
+    text-shadow:0 2px 0 rgba(0,0,0,0.2);
+  }
+  p.sub{
+    margin:0;
+    color:#fff3e0;
+    font-size:14px;
+    max-width:440px;
+    margin:0 auto;
+  }
+
+  .hud{
+    display:flex;
+    justify-content:center;
+    gap:12px;
+    margin:18px auto 6px;
+    flex-wrap:wrap;
+  }
+  .hud .pill{
+    background:var(--paper);
+    padding:7px 16px;
+    border-radius:100px;
+    font-weight:800;
+    font-size:13px;
+    box-shadow:0 3px 0 rgba(0,0,0,0.12);
+  }
+
+  /* MAP */
+  .map{
+    position:relative;
+    max-width:480px;
+    margin:26px auto 0;
+    padding:10px 20px 40px;
+  }
+  .path-svg{
+    position:absolute;
+    top:0; left:0;
+    width:100%;
+    height:100%;
+    z-index:0;
+  }
+  .station{
+    position:relative;
+    z-index:2;
+    display:flex;
+    align-items:center;
+    gap:14px;
+    margin-bottom:64px;
+  }
+  .station.right{flex-direction:row-reverse;text-align:right;}
+  .station.left{text-align:left;}
+
+  .badge-circle{
+    flex:0 0 auto;
+    width:88px;height:88px;
+    border-radius:50%;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    font-size:38px;
+    background:var(--stcolor, #999);
+    border:5px solid var(--paper);
+    box-shadow:0 6px 0 var(--stcolor-dark,#666), 0 8px 14px rgba(0,0,0,0.25);
+    cursor:pointer;
+    transition:transform .15s ease;
+    position:relative;
+  }
+  .badge-circle:active{transform:translateY(4px);box-shadow:0 2px 0 var(--stcolor-dark,#666);}
+  .badge-circle.locked{
+    background:#8a8378;
+    filter:grayscale(0.4);
+    cursor:not-allowed;
+    box-shadow:0 6px 0 #635d54, 0 8px 14px rgba(0,0,0,0.2);
+  }
+  .badge-circle.locked:active{transform:none;box-shadow:0 6px 0 #635d54;}
+  .lock-icon{
+    position:absolute;
+    bottom:-4px; left:50%;
+    transform:translateX(-50%);
+    font-size:16px;
+  }
+  .stars{
+    position:absolute;
+    top:-14px; left:50%;
+    transform:translateX(-50%);
+    font-size:14px;
+    white-space:nowrap;
+    text-shadow:0 1px 2px rgba(0,0,0,0.3);
+  }
+
+  .station-info{
+    background:var(--paper);
+    padding:10px 16px;
+    border-radius:14px;
+    box-shadow:0 3px 0 rgba(0,0,0,0.1);
+    max-width:180px;
+  }
+  .station-info .name{
+    font-family:'Baloo 2',sans-serif;
+    font-weight:700;
+    font-size:16px;
+    margin-bottom:2px;
+  }
+  .station-info .status{
+    font-size:12px;
+    color:#6b5a45;
+  }
+
+  /* QUIZ PANEL */
+  .overlay{
+    position:fixed;
+    inset:0;
+    background:rgba(30,20,10,0.65);
+    display:none;
+    align-items:center;
+    justify-content:center;
+    z-index:50;
+    padding:16px;
+  }
+  .overlay.show{display:flex;}
+  .quiz-panel{
+    background:var(--paper);
+    border-radius:22px;
+    max-width:420px;
+    width:100%;
+    padding:26px 22px 22px;
+    box-shadow:0 14px 0 rgba(0,0,0,0.2);
+    position:relative;
+  }
+  .quiz-header{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    margin-bottom:14px;
+  }
+  .quiz-header .icon{
+    width:46px;height:46px;
+    border-radius:50%;
+    display:flex;align-items:center;justify-content:center;
+    font-size:22px;
+    background:var(--stcolor,#999);
+    border:3px solid #fff;
+    flex:0 0 auto;
+  }
+  .quiz-header .title{
+    font-family:'Baloo 2',sans-serif;
+    font-weight:700;
+    font-size:17px;
+  }
+  .quiz-header .qcount{
+    font-size:12px;
+    color:#6b5a45;
+  }
+
+  .progress-dots{
+    display:flex;
+    gap:6px;
+    margin-bottom:16px;
+  }
+  .progress-dots span{
+    flex:1;
+    height:6px;
+    border-radius:100px;
+    background:#e6dcc8;
+  }
+  .progress-dots span.done{background:var(--stcolor,#999);}
+
+  .question-text{
+    font-family:'Cairo', sans-serif;
+    font-weight:700;
+    font-size:16.5px;
+    direction:ltr;
+    text-align:left;
+    line-height:1.5;
+    margin-bottom:16px;
+    color:var(--ink);
+  }
+
+  .options{
+    display:flex;
+    flex-direction:column;
+    gap:10px;
+  }
+  .opt-btn{
+    direction:ltr;
+    text-align:left;
+    background:#f6efe0;
+    border:2px solid #e6dcc8;
+    border-radius:12px;
+    padding:12px 16px;
+    font-size:14.5px;
+    font-family:'Cairo', sans-serif;
+    font-weight:600;
+    cursor:pointer;
+    transition:all .15s ease;
+    color:var(--ink);
+  }
+  .opt-btn:hover{border-color:var(--stcolor,#999);}
+  .opt-btn.correct{
+    background:#dff5e3;
+    border-color:var(--green);
+    color:#1e6b3a;
+  }
+  .opt-btn.wrong{
+    background:#fbe3e2;
+    border-color:var(--red);
+    color:#a33330;
+  }
+  .opt-btn:disabled{cursor:default;}
+
+  .feedback-row{
+    margin-top:14px;
+    min-height:26px;
+    font-size:13.5px;
+    font-weight:700;
+    text-align:center;
+  }
+  .feedback-row.good{color:#1e6b3a;}
+  .feedback-row.bad{color:#a33330;}
+
+  .quiz-footer{
+    display:flex;
+    justify-content:flex-end;
+    margin-top:14px;
+  }
+  .next-btn{
+    background:var(--stcolor,#999);
+    color:#fff;
+    border:none;
+    padding:10px 24px;
+    border-radius:100px;
+    font-weight:800;
+    font-family:'Cairo',sans-serif;
+    font-size:14px;
+    cursor:pointer;
+    display:none;
+    box-shadow:0 3px 0 var(--stcolor-dark,#666);
+  }
+  .next-btn.show{display:inline-block;}
+
+  .close-x{
+    position:absolute;
+    top:14px; left:14px;
+    background:none;
+    border:none;
+    font-size:20px;
+    color:#8a7a5f;
+    cursor:pointer;
+  }
+
+  /* STATION COMPLETE */
+  .complete-panel{
+    text-align:center;
+    padding:10px 4px 4px;
+  }
+  .complete-panel .stamp{
+    font-size:56px;
+    margin-bottom:8px;
+    animation:stampIn .5s cubic-bezier(.2,1.4,.4,1);
+  }
+  @keyframes stampIn{
+    0%{transform:scale(2) rotate(-15deg);opacity:0;}
+    100%{transform:scale(1) rotate(-8deg);opacity:1;}
+  }
+  .complete-panel h3{
+    font-family:'Baloo 2',sans-serif;
+    margin:0 0 6px;
+    font-size:20px;
+  }
+  .complete-panel p{margin:0 0 18px;font-size:14px;color:#6b5a45;}
+  .complete-panel .score-badge{
+    font-family:'Baloo 2',sans-serif;
+    font-size:26px;
+    color:var(--stcolor-dark,#666);
+    margin-bottom:18px;
+  }
+
+  /* FINAL SCREEN */
+  .final-screen{
+    text-align:center;
+    padding:6px 4px 4px;
+  }
+  .final-screen .trophy{font-size:60px;margin-bottom:6px;}
+  .final-screen h2{font-family:'Baloo 2',sans-serif;margin:0 0 6px;font-size:24px;}
+  .final-screen p{margin:0 0 16px;font-size:14px;color:#6b5a45;}
+  .final-stats{
+    display:flex;
+    justify-content:center;
+    gap:14px;
+    margin-bottom:20px;
+  }
+  .final-stats .stat{
+    background:#f6efe0;
+    border-radius:12px;
+    padding:12px 18px;
+    min-width:90px;
+  }
+  .final-stats .stat b{
+    display:block;font-family:'Baloo 2',sans-serif;font-size:22px;color:var(--gold);
+  }
+  .final-stats .stat span{font-size:11px;color:#6b5a45;}
+
+  button.main-btn{
+    background:var(--gold);
+    color:#fff;
+    border:none;
+    padding:12px 30px;
+    border-radius:100px;
+    font-weight:800;
+    font-family:'Cairo',sans-serif;
+    font-size:15px;
+    cursor:pointer;
+    box-shadow:0 4px 0 #b8842a;
+  }
+  button.main-btn:active{transform:translateY(3px);box-shadow:0 1px 0 #b8842a;}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="badge-top">SCHOOL CLUBS · UNIT 1</div>
+  <h1>School Clubs Quest 🗺️</h1>
+  <p class="sub">Answer each club's questions in order: Choir 🎤, Computer Club 💻, Swimming Club 🏊, Chess Club ♟️ — and collect stars!</p>
+</header>
+
+<div class="hud">
+  <div class="pill">⭐ <span id="totalStars">0</span>/12</div>
+  <div class="pill">🏅 Score: <span id="totalScore">0</span></div>
+</div>
+
+<div class="map" id="map"></div>
+
+<div class="overlay" id="overlay">
+  <div class="quiz-panel" id="quizPanel"></div>
+</div>
+
+<script>
+const stations = [
+  {
+    id:"choir", name:"Choir Club", icon:"🎤",
+    color:"var(--c-choir)", colorDark:"var(--c-choir-dark)",
+    questions:[
+      { q:"What did the choir sing today?", options:["Funny songs","Sad songs","No songs at all"], correct:0 },
+      { q:"Who helps the choir and tells them when to start and stop?", options:["Mrs Hall","Anna","Candy"], correct:0 },
+      { q:"When is the singing competition?", options:["In December","In September","In July"], correct:0 },
+      { q:"What are they going to do every week before the competition?", options:["Practise songs","Play chess","Watch TV"], correct:0 },
+    ]
+  },
+  {
+    id:"computer", name:"Computer Club", icon:"💻",
+    color:"var(--c-computer)", colorDark:"var(--c-computer-dark)",
+    questions:[
+      { q:"What did they learn at Computer Club?", options:["Animation","Swimming","Chess"], correct:0 },
+      { q:"In Anna's animation, what did the girl do?", options:["She threw a ball","She sang a song","She swam in the sea"], correct:0 },
+      { q:"In Danny's animation, what swam through the seaweed?", options:["A fish","A snail","A boy"], correct:0 },
+      { q:"What is the name of Danny's funny animation?", options:["Swimming fish","Computer club work","Funny snail"], correct:0 },
+    ]
+  },
+  {
+    id:"swim", name:"Swimming Club", icon:"🏊",
+    color:"var(--c-swim)", colorDark:"var(--c-swim-dark)",
+    questions:[
+      { q:"How many metres did he swim?", options:["50 metres","40 metres","38 metres"], correct:0 },
+      { q:"What was his swimming time?", options:["40.6 seconds","38.2 seconds","50 seconds"], correct:0 },
+      { q:"What is the club record?", options:["38.2 seconds","40.6 seconds","45 seconds"], correct:0 },
+      { q:"Was he the fastest swimmer in his group?", options:["Yes, he was","No, he wasn't","He doesn't know"], correct:0 },
+    ]
+  },
+  {
+    id:"chess", name:"Chess Club", icon:"♟️",
+    color:"var(--c-chess)", colorDark:"var(--c-chess-dark)",
+    questions:[
+      { q:"Who did he win against at chess?", options:["Ben","Anna","His dad"], correct:0 },
+      { q:"Who did he lose against?", options:["Anna","Ben","His coach"], correct:0 },
+      { q:"Why was he tired at Chess Club?", options:["They ran two kilometres in sports","He didn't sleep well","He swam 50 metres"], correct:0 },
+      { q:"What does he want for his birthday?", options:["A new chess game","A new computer","New swimming goggles"], correct:0 },
+    ]
+  },
+];
+
+let progress = stations.map(()=>({ done:false, stars:0, score:0 }));
+let totalScore = 0;
+
+const mapEl = document.getElementById('map');
+const overlay = document.getElementById('overlay');
+const quizPanel = document.getElementById('quizPanel');
+const totalStarsEl = document.getElementById('totalStars');
+const totalScoreEl = document.getElementById('totalScore');
+
+function isUnlocked(i){
+  return i === 0 || progress[i-1].done;
+}
+
+function renderMap(){
+  mapEl.innerHTML = "";
+
+  const svgH = stations.length * 150;
+  const svg = document.createElementNS("http://www.w3.org/2000/svg","svg");
+  svg.setAttribute("class","path-svg");
+  svg.setAttribute("viewBox", `0 0 100 ${svgH}`);
+  svg.setAttribute("preserveAspectRatio","none");
+
+  let pathD = "";
+  stations.forEach((st, i)=>{
+    const x = i % 2 === 0 ? 78 : 22;
+    const y = 44 + i*150;
+    pathD += (i===0 ? `M ${x} ${y}` : ` L ${x} ${y}`);
+  });
+  const pathEl = document.createElementNS("http://www.w3.org/2000/svg","path");
+  pathEl.setAttribute("d", pathD);
+  pathEl.setAttribute("stroke", "rgba(255,255,255,0.55)");
+  pathEl.setAttribute("stroke-width","3");
+  pathEl.setAttribute("stroke-dasharray","1 6");
+  pathEl.setAttribute("stroke-linecap","round");
+  pathEl.setAttribute("fill","none");
+  svg.appendChild(pathEl);
+  mapEl.appendChild(svg);
+
+  stations.forEach((st, i)=>{
+    const unlocked = isUnlocked(i);
+    const done = progress[i].done;
+    const side = i % 2 === 0 ? 'right' : 'left';
+
+    const row = document.createElement('div');
+    row.className = `station ${side}`;
+
+    const circle = document.createElement('div');
+    circle.className = 'badge-circle' + (unlocked ? '' : ' locked');
+    circle.style.setProperty('--stcolor', st.color);
+    circle.style.setProperty('--stcolor-dark', st.colorDark);
+    circle.innerHTML = unlocked ? st.icon : '❔';
+    if(!unlocked){
+      const lock = document.createElement('div');
+      lock.className = 'lock-icon';
+      lock.textContent = '🔒';
+      circle.appendChild(lock);
+    }
+    if(done){
+      const stars = document.createElement('div');
+      stars.className = 'stars';
+      stars.textContent = '⭐'.repeat(progress[i].stars) + '☆'.repeat(3-progress[i].stars);
+      circle.appendChild(stars);
+    }
+    if(unlocked){
+      circle.addEventListener('click', ()=> openStation(i));
+    }
+
+    const info = document.createElement('div');
+    info.className = 'station-info';
+    const statusText = done
+      ? `Completed — ${progress[i].score}/${st.questions.length*10} points`
+      : (unlocked ? 'Tap to start' : 'Finish the previous club first');
+    info.innerHTML = `<div class="name">${st.name}</div><div class="status">${statusText}</div>`;
+
+    row.appendChild(circle);
+    row.appendChild(info);
+    mapEl.appendChild(row);
+  });
+
+  totalStarsEl.textContent = progress.reduce((a,p)=>a+p.stars,0);
+  totalScoreEl.textContent = totalScore;
+}
+
+let currentStationIdx = null;
+let currentQIdx = 0;
+let stationScore = 0;
+let answered = false;
+
+function openStation(i){
+  currentStationIdx = i;
+  currentQIdx = 0;
+  stationScore = 0;
+  overlay.classList.add('show');
+  renderQuestion();
+}
+
+function closeOverlay(){
+  overlay.classList.remove('show');
+}
+
+function renderQuestion(){
+  const st = stations[currentStationIdx];
+  const q = st.questions[currentQIdx];
+  answered = false;
+
+  let dots = '';
+  st.questions.forEach((_,idx)=>{
+    dots += `<span class="${idx < currentQIdx ? 'done' : ''}" style="${idx<currentQIdx?`background:${st.color}`:''}"></span>`;
+  });
+
+  quizPanel.style.setProperty('--stcolor', st.color);
+  quizPanel.style.setProperty('--stcolor-dark', st.colorDark);
+
+  quizPanel.innerHTML = `
+    <button class="close-x" id="closeBtn">✕</button>
+    <div class="quiz-header">
+      <div class="icon" style="background:${st.color}">${st.icon}</div>
+      <div>
+        <div class="title">${st.name}</div>
+        <div class="qcount">Question ${currentQIdx+1} of ${st.questions.length}</div>
+      </div>
+    </div>
+    <div class="progress-dots">${dots}</div>
+    <div class="question-text">${q.q}</div>
+    <div class="options" id="optionsWrap"></div>
+    <div class="feedback-row" id="feedback"></div>
+    <div class="quiz-footer">
+      <button class="next-btn" id="nextBtn" style="background:${st.color};box-shadow:0 3px 0 ${st.colorDark}">Next</button>
+    </div>
+  `;
+
+  document.getElementById('closeBtn').addEventListener('click', closeOverlay);
+
+  const optsWrap = document.getElementById('optionsWrap');
+  q.options.forEach((opt, idx)=>{
+    const btn = document.createElement('button');
+    btn.className = 'opt-btn';
+    btn.textContent = opt;
+    btn.addEventListener('click', ()=> selectOption(idx, btn));
+    optsWrap.appendChild(btn);
+  });
+
+  document.getElementById('nextBtn').addEventListener('click', ()=>{
+    currentQIdx++;
+    if(currentQIdx < st.questions.length){
+      renderQuestion();
+    } else {
+      finishStation();
+    }
+  });
+}
+
+function selectOption(idx, btn){
+  if(answered) return;
+  answered = true;
+  const st = stations[currentStationIdx];
+  const q = st.questions[currentQIdx];
+  const allBtns = document.querySelectorAll('.opt-btn');
+  const feedback = document.getElementById('feedback');
+  const nextBtn = document.getElementById('nextBtn');
+
+  allBtns.forEach((b, i)=>{
+    b.disabled = true;
+    if(i === q.correct) b.classList.add('correct');
+    else if(i === idx) b.classList.add('wrong');
+  });
+
+  if(idx === q.correct){
+    stationScore += 10;
+    feedback.textContent = '✅ Correct answer!';
+    feedback.className = 'feedback-row good';
+  } else {
+    feedback.textContent = '❌ Not quite — the right answer is shown in green';
+    feedback.className = 'feedback-row bad';
+  }
+  nextBtn.classList.add('show');
+}
+
+function finishStation(){
+  const st = stations[currentStationIdx];
+  const maxScore = st.questions.length * 10;
+  const pct = stationScore / maxScore;
+  let stars = pct >= 0.99 ? 3 : pct >= 0.6 ? 2 : 1;
+
+  progress[currentStationIdx] = { done:true, stars, score:stationScore };
+  totalScore += stationScore;
+
+  quizPanel.innerHTML = `
+    <div class="complete-panel">
+      <div class="stamp">${stars===3?'🏆':stars===2?'🎉':'👍'}</div>
+      <h3>${st.name} complete!</h3>
+      <div class="score-badge" style="color:${st.colorDark}">${stationScore}/${maxScore} points</div>
+      <p>${'⭐'.repeat(stars)}${'☆'.repeat(3-stars)}</p>
+      <button class="main-btn" id="backToMapBtn" style="background:${st.color};box-shadow:0 4px 0 ${st.colorDark}">Back to map</button>
+    </div>
+  `;
+  document.getElementById('backToMapBtn').addEventListener('click', ()=>{
+    closeOverlay();
+    renderMap();
+    checkAllDone();
+  });
+}
+
+function checkAllDone(){
+  const allDone = progress.every(p=>p.done);
+  if(allDone){
+    setTimeout(showFinal, 350);
+  }
+}
+
+function showFinal(){
+  const stars = progress.reduce((a,p)=>a+p.stars,0);
+  overlay.classList.add('show');
+  quizPanel.innerHTML = `
+    <div class="final-screen">
+      <div class="trophy">${stars>=10?'🏆':stars>=7?'🎉':'🎈'}</div>
+      <h2>School Clubs Quest complete!</h2>
+      <p>You answered every question in all four clubs</p>
+      <div class="final-stats">
+        <div class="stat"><b>${totalScore}</b><span>Total score</span></div>
+        <div class="stat"><b>${stars}/12</b><span>Stars</span></div>
+      </div>
+      <button class="main-btn" id="restartBtn">Play again</button>
+    </div>
+  `;
+  document.getElementById('restartBtn').addEventListener('click', ()=>{
+    progress = stations.map(()=>({ done:false, stars:0, score:0 }));
+    totalScore = 0;
+    closeOverlay();
+    renderMap();
+  });
+}
+
+renderMap();
+</script>
+</body>
+</html>
